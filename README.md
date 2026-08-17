@@ -58,6 +58,47 @@ DSH（DeepSeek Harness）插件：**DeepSeek 官方 API 高峰时段智能管控
 
 重启后 Web 端右下角出现状态面板即加载成功；可输入 `/status` 验证。
 
+## 一键安装 / 一键升级（PowerShell）
+
+> 以下命令在 **PowerShell** 中直接粘贴执行（幂等：重复执行不会重复注册）。执行后**重启 DSH** 生效。
+> `$p` 为插件本地目录（按需修改），其余步骤全自动。
+
+**一键安装**（目录不存在则自动克隆 GitHub 仓库；注册 link 依赖 + bundle；安装依赖）：
+
+```powershell
+$p = "E:\Users\ASUS\Desktop\dshp\deepseek-peak-blocker"
+$prof = "$env:USERPROFILE\.dsh\profiles\web"
+if (-not (Test-Path $p)) { git clone https://github.com/zisekongling/deepseek-peak-blocker.git $p }
+Push-Location $p; pnpm install; Pop-Location
+$f = "$prof\package.json"
+$j = Get-Content $f -Raw | ConvertFrom-Json
+$j.dependencies.'deepseek-peak-blocker' = "link:$($p -replace '\\','/')"
+if ($j.dsh.profile.bundles -notcontains 'deepseek-peak-blocker') { $j.dsh.profile.bundles += 'deepseek-peak-blocker' }
+$j | ConvertTo-Json -Depth 10 | Set-Content $f -Encoding utf8
+Push-Location $prof; pnpm install --no-frozen-lockfile; Pop-Location
+Write-Host '✅ 安装完成，请重启 DSH'
+```
+
+**一键升级**（link 模式即源码即仓库：拉取最新代码 + 重装依赖 + 确保注册；重启 DSH 生效）：
+
+```powershell
+$p = "E:\Users\ASUS\Desktop\dshp\deepseek-peak-blocker"
+$prof = "$env:USERPROFILE\.dsh\profiles\web"
+if (Test-Path $p) { git -C $p pull --ff-only } else { git clone https://github.com/zisekongling/deepseek-peak-blocker.git $p }
+Push-Location $p; pnpm install; Pop-Location
+$f = "$prof\package.json"
+$j = Get-Content $f -Raw | ConvertFrom-Json
+$j.dependencies.'deepseek-peak-blocker' = "link:$($p -replace '\\','/')"
+if ($j.dsh.profile.bundles -notcontains 'deepseek-peak-blocker') { $j.dsh.profile.bundles += 'deepseek-peak-blocker' }
+$j | ConvertTo-Json -Depth 10 | Set-Content $f -Encoding utf8
+Push-Location $prof; pnpm install --no-frozen-lockfile; Pop-Location
+Write-Host '✅ 升级完成，请重启 DSH'
+```
+
+**GitHub 安装模式的升级**（非 link 时）：在 profile 目录执行 `pnpm update deepseek-peak-blocker`（重新解析 `github:` 分支最新提交），然后重启 DSH。
+
+> 提示：git pull / pnpm 下载需走代理时，先设置 `$env:HTTPS_PROXY = "http://127.0.0.1:10808"`（或按你的代理端口调整）；Windows 证书吊销报错时对 git 追加 `-c http.schannelCheckRevoke=false`。
+
 ## 使用提醒
 
 - `/bypass` 令牌与时段状态记录均存于进程内存：插件重启后令牌清空（页面刷新不影响——令牌在 Host 侧）。
