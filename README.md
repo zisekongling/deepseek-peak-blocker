@@ -33,71 +33,50 @@ DSH（DeepSeek Harness）插件：**DeepSeek 官方 API 高峰时段智能管控
 | `cancelMessage` | string | `请求已被用户取消。` | 取消时返回给上层的错误提示 |
 | `peakNotification` | string | `⏰ 已进入 API 高峰时段，当前有对话正在进行，请注意响应速度可能受影响。` | 顶部横幅文案 |
 
-## 安装（DSH 插件发现规则）
+## 安装 / 更新（官方 `dsh plugin` 命令，跨平台）
 
-本插件遵守 DSH bundle 插件发现规则：`package.json` 声明 `dsh.bundle.patch`（组合补丁挂载）与 `dsh.client.platform: "web"`（客户端模块声明），`cordis.patch.yml` 向 web 组合插入插件行，`exports["./client"]` 指向经 `__ModuleLoader__` 加载的客户端 bundle。
+本插件遵守 DSH **bundle 插件**发现规则：仓库根 `package.json` 声明 `dsh.bundle.patch`（组合补丁）与 `dsh.client.platform: "web"`（客户端模块），`cordis.patch.yml` 向组合插入插件行，`exports["./client"]` 指向经 `__ModuleLoader__` 加载的客户端 bundle。`dsh plugin` 会**自动把声明了 `dsh.bundle` 的依赖加入 `dsh.profile.bundles`**，无需手改配置。
 
-在 profile（如 `~/.dsh/profiles/web/`）中二选一：
+> 前置：Node.js ≥ 18、pnpm ≥ 9、git（均需在 PATH——pnpm 解析 `github:` 源时会调用 git）。Windows / Linux / macOS 命令完全一致。
 
-**方式 A：本地文件夹（link，开发/调试推荐）**
-1. 克隆/放置插件源码到本地目录（如 `E:\Users\ASUS\Desktop\dshp\deepseek-peak-blocker`），并在该目录执行 `pnpm install`（安装其依赖 `schemastery`——link 方式下 pnpm 不会自动为包外目录装依赖，缺失会导致 host 半区导入失败）。
-2. `package.json` 的 `dependencies` 添加：
-   ```json
-   "deepseek-peak-blocker": "link:E:/Users/ASUS/Desktop/dshp/deepseek-peak-blocker"
-   ```
-3. 同一文件的 `dsh.profile.bundles` 数组追加：
-   ```json
-   "deepseek-peak-blocker"
-   ```
-4. profile 目录执行 `pnpm install`（创建 junction），重启 DSH。
+**一键安装**（GitHub 源）：
 
-**方式 B：GitHub 安装**
-1. `dependencies` 添加：`"deepseek-peak-blocker": "github:<owner>/deepseek-peak-blocker#main"`（codeload 被限流时改用 `git+https://github.com/<owner>/deepseek-peak-blocker.git`）。
-2. `dsh.profile.bundles` 追加 `"deepseek-peak-blocker"`。
-3. profile 目录执行 `pnpm install`，重启 DSH。
-
-重启后 Web 端右下角出现状态面板即加载成功；可输入 `/status` 验证。
-
-## 一键安装 / 一键升级（PowerShell）
-
-> 以下命令在 **PowerShell** 中直接粘贴执行（幂等：重复执行不会重复注册）。执行后**重启 DSH** 生效。
-> `$p` 为插件本地目录（按需修改），其余步骤全自动。
-
-**一键安装**（目录不存在则自动克隆 GitHub 仓库；注册 link 依赖 + bundle；安装依赖）：
-
-```powershell
-$p = "E:\Users\ASUS\Desktop\dshp\deepseek-peak-blocker"
-$prof = "$env:USERPROFILE\.dsh\profiles\web"
-if (-not (Test-Path $p)) { git clone https://github.com/zisekongling/deepseek-peak-blocker.git $p }
-Push-Location $p; pnpm install; Pop-Location
-$f = "$prof\package.json"
-$j = Get-Content $f -Raw | ConvertFrom-Json
-$j.dependencies.'deepseek-peak-blocker' = "link:$($p -replace '\\','/')"
-if ($j.dsh.profile.bundles -notcontains 'deepseek-peak-blocker') { $j.dsh.profile.bundles += 'deepseek-peak-blocker' }
-$j | ConvertTo-Json -Depth 10 | Set-Content $f -Encoding utf8
-Push-Location $prof; pnpm install --no-frozen-lockfile; Pop-Location
-Write-Host '✅ 安装完成，请重启 DSH'
+```sh
+dsh plugin --profile web add "github:zisekongling/deepseek-peak-blocker#main"
 ```
 
-**一键升级**（link 模式即源码即仓库：拉取最新代码 + 重装依赖 + 确保注册；重启 DSH 生效）：
+**本地目录开发**（改动即时生效，无需每次 push）：
 
-```powershell
-$p = "E:\Users\ASUS\Desktop\dshp\deepseek-peak-blocker"
-$prof = "$env:USERPROFILE\.dsh\profiles\web"
-if (Test-Path $p) { git -C $p pull --ff-only } else { git clone https://github.com/zisekongling/deepseek-peak-blocker.git $p }
-Push-Location $p; pnpm install; Pop-Location
-$f = "$prof\package.json"
-$j = Get-Content $f -Raw | ConvertFrom-Json
-$j.dependencies.'deepseek-peak-blocker' = "link:$($p -replace '\\','/')"
-if ($j.dsh.profile.bundles -notcontains 'deepseek-peak-blocker') { $j.dsh.profile.bundles += 'deepseek-peak-blocker' }
-$j | ConvertTo-Json -Depth 10 | Set-Content $f -Encoding utf8
-Push-Location $prof; pnpm install --no-frozen-lockfile; Pop-Location
-Write-Host '✅ 升级完成，请重启 DSH'
+```sh
+dsh plugin --profile web add ./deepseek-peak-blocker   # 相对路径以当前执行目录为基准
 ```
 
-**GitHub 安装模式的升级**（非 link 时）：在 profile 目录执行 `pnpm update deepseek-peak-blocker`（重新解析 `github:` 分支最新提交），然后重启 DSH。
+**一键更新**（重新解析 GitHub 分支最新提交；若新版本新增了 bundle 声明也会自动激活）：
 
-> 提示：git pull / pnpm 下载需走代理时，先设置 `$env:HTTPS_PROXY = "http://127.0.0.1:10808"`（或按你的代理端口调整）；Windows 证书吊销报错时对 git 追加 `-c http.schannelCheckRevoke=false`。
+```sh
+dsh plugin --profile web update deepseek-peak-blocker
+```
+
+**卸载**：
+
+```sh
+dsh plugin --profile web remove deepseek-peak-blocker
+```
+
+- `web` 是默认 profile（`$DSH_HOME/profiles/web`，未设置 `DSH_HOME` 时为 `~/.dsh/profiles/web`）；其他 profile 把 `web` 换成名字即可。
+- 装完 / 更新后**重启 DSH**（bundle 层在启动时合成）。Web 端右下角出现状态面板即成功；可输入 `/status` 验证。
+
+**网络提示（国内 / 代理环境）**：
+
+```sh
+# git 走代理（pnpm 解析 github: 源需要 git 访问 github.com）
+git config --global http.proxy http://127.0.0.1:10808
+git config --global https.proxy http://127.0.0.1:10808
+# Windows 证书吊销检查失败时：
+git config --global http.schannelCheckRevoke false
+```
+
+> 若此前用 `link:` 方式装过、从 link 切换回 GitHub 源时遇 `EPERM`，先删除残留的 junction 目录：`rm -rf <profile>/node_modules/deepseek-peak-blocker` 再重试。
 
 ## 使用提醒
 
