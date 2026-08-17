@@ -37,18 +37,26 @@ DSH（DeepSeek Harness）插件：**DeepSeek 官方 API 高峰时段智能管控
 
 本插件遵守 DSH bundle 插件发现规则：`package.json` 声明 `dsh.bundle.patch`（组合补丁挂载）与 `dsh.client.platform: "web"`（客户端模块声明），`cordis.patch.yml` 向 web 组合插入插件行，`exports["./client"]` 指向经 `__ModuleLoader__` 加载的客户端 bundle。
 
-在 profile（如 `~/.dsh/profiles/web/`）中：
+在 profile（如 `~/.dsh/profiles/web/`）中二选一：
 
-1. `package.json` 的 `dependencies` 添加（GitHub 安装）：
+**方式 A：本地文件夹（link，开发/调试推荐）**
+1. 克隆/放置插件源码到本地目录（如 `E:\Users\ASUS\Desktop\dshp\deepseek-peak-blocker`），并在该目录执行 `pnpm install`（安装其依赖 `schemastery`——link 方式下 pnpm 不会自动为包外目录装依赖，缺失会导致 host 半区导入失败）。
+2. `package.json` 的 `dependencies` 添加：
    ```json
-   "deepseek-peak-blocker": "github:<owner>/deepseek-peak-blocker#main"
+   "deepseek-peak-blocker": "link:E:/Users/ASUS/Desktop/dshp/deepseek-peak-blocker"
    ```
-2. 同一文件的 `dsh.profile.bundles` 数组追加：
+3. 同一文件的 `dsh.profile.bundles` 数组追加：
    ```json
    "deepseek-peak-blocker"
    ```
-3. 在 profile 目录执行 `pnpm install`（按现有 `whale-girl` 的安装方式即可）。
-4. 重启 DSH。Web 端右下角出现状态面板即加载成功；可输入 `/status` 验证。
+4. profile 目录执行 `pnpm install`（创建 junction），重启 DSH。
+
+**方式 B：GitHub 安装**
+1. `dependencies` 添加：`"deepseek-peak-blocker": "github:<owner>/deepseek-peak-blocker#main"`（codeload 被限流时改用 `git+https://github.com/<owner>/deepseek-peak-blocker.git`）。
+2. `dsh.profile.bundles` 追加 `"deepseek-peak-blocker"`。
+3. profile 目录执行 `pnpm install`，重启 DSH。
+
+重启后 Web 端右下角出现状态面板即加载成功；可输入 `/status` 验证。
 
 ## 使用提醒
 
