@@ -1,0 +1,8 @@
+# deepseek-peak-blocker bundle patch：向 web 组合挂载本插件。
+# 发现规则：package.json 的 dsh.bundle.patch 指向本文件；loader 读取本补丁，
+# 将 id+name 行插入组合（name 即包名，其 main 导出 cordis 插件）。
+# client half 由 package.json 的 dsh.client.platform="web" + exports["./client"] 声明，
+# 经 __ModuleLoader__ 内核按 bundle 加载。
+- insert:
+    - id: deepseek-peak-blocker
+      name: deepseek-peak-blocker
