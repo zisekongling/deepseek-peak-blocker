@@ -1,6 +1,6 @@
 {
   "name": "deepseek-peak-blocker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "DSH 插件：DeepSeek 官方 API 高峰时段智能管控（阻塞确认模态框 / 顶部提醒横幅 / 右下角状态面板 / /bypass 与 /status 命令）",
   "main": "lib/index.mjs",
